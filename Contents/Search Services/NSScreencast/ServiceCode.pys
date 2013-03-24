@@ -1,0 +1,48 @@
+import re
+
+BASE_URL = 'http://railscasts.com'
+SEARCH_URL = 'http://railscasts.com/episodes?search=%s'
+
+####################################################################################################
+
+def Search(query):
+
+  # Compute the URL and download the HTML
+  url = SEARCH_URL % String.Quote(query, usePlus = True)
+  search_page = HTML.ElementFromURL(url)
+  search_results = search_page.xpath("//div[@class='full']/div[@class='episode']")
+   
+  # Create a container to hold the results
+  c = ObjectContainer()
+  for item in search_results:  
+    try:
+
+      url = item.xpath(".//a")[0].get('href')
+      if url.startswith("http") == False:
+        url = BASE_URL + url
+
+      thumb = item.xpath(".//img")[0].get('src')
+      if thumb.startswith("http") == False:
+        thumb = BASE_URL + thumb
+
+      title = item.xpath(".//h2//text()")[0]
+      description = item.xpath(".//div[@class='description']/text()")[0]
+      date = item.xpath(".//span[@class='published_at']/text()")[0]
+      date = Datetime.ParseDate(date)
+      duration_text = item.xpath(".//span[@class='stats']/text()")[0]
+      duration_dict = re.match(".*\((?P<mins>[0-9]+) minutes.*", duration_text).groupdict()
+      duration = int(duration_dict['mins']) * 60 * 1000
+
+      c.add(VideoClipObject(
+        url = url,
+        title = title,
+        summary = description,
+        thumb = thumb,
+        originally_available_at = date,
+        duration = duration
+      ))
+
+    except:
+      Log.Exception("Exception adding video result")
+      
+  return c
